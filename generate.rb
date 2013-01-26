@@ -2,6 +2,9 @@ require 'rubygems'
 require 'bundler/setup'
 require 'rqrcode_png'
 require 'csv'
+require 'RMagick'
+
+include Magick
 
 GENERATED_CODES_DIR = 'generated_codes'
 GENERATED_CODES_HISTORY_FILE = 'history/generated_codes.csv'
@@ -10,7 +13,7 @@ GENERATED_CODES_HISTORY_FILE = 'history/generated_codes.csv'
 # The QR codes encode a string with the following format:
 # "#{ Class }-#{ type }-#{ page_number }".
 # The code will then be used to identify the page when it is scanned.
-# 
+#
 # In order to keep track of page numbering, past generated codes are
 # located in history/generated_codes.csv.
 # NOTE: When this file gets large, it will probably take a long time to
@@ -40,7 +43,10 @@ def generate_qr_code(class_name, type, page_number, options = {})
 
   png = qr.to_img
   Dir.mkdir(GENERATED_CODES_DIR) unless File.directory?(GENERATED_CODES_DIR)
+  processed_location = "generated_codes/#{ string }.png" # clean this part up later
   png.save("generated_codes/#{ string }.png") # TODO: Add string to png
+
+  add_string_to_image(processed_location, string)
 
   CSV.open(GENERATED_CODES_HISTORY_FILE, 'ab') do |csv| # TODO: create this file if not present
     csv << [class_name, type, padded_page_number, Time.now.strftime('%F')]
@@ -64,9 +70,27 @@ end
 
 def generate_code_batch(class_name, type, n)
   start_number = read_highest_page_number_for_each_class_from_generated_codes[ [class_name, type] ].to_i
-  puts start_number
-  start_number ||= 0
-  n.times { |i| generate_qr_code class_name, type, start_number + i + 1 }
+  # we want to start at the next page, unless there have been zero pages generated for that class
+  start_number += 1 unless start_number == 0
+  # For some reason, zbar has problems reading codes of size 3, so the size is hardcoded here
+  n.times { |i| generate_qr_code class_name, type, start_number + i, :size => 4, :level => :h }
+end
+
+WIDTH_INCREASE = 270 # (Move to top)
+
+def add_string_to_image(image_location, string)
+  img = Magick::Image.read(image_location).first
+  img = img.scale 4
+  code_width = img.rows
+  code_height = img.columns
+  img = img.extent(code_width + WIDTH_INCREASE, code_height, 0, 0)
+  text = Draw.new
+  img.annotate(text, WIDTH_INCREASE, code_height, code_width, 0, string){
+    text.pointsize = 32
+    text.gravity = Magick::WestGravity
+  }
+  img.format = 'png'
+  img.write image_location
 end
 
 # TODO: Present options for classes and types so they do not have to be typed in
