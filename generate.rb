@@ -100,7 +100,7 @@ end
 print "Please enter the class: "
 class_name = gets.chomp
 
-print "Please enter the type (L/T/Lb/M): "
+print "Please enter the type: "
 type = gets.chomp
 
 print "Please enter the number of pages you wish to generate: "
