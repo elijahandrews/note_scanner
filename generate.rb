@@ -11,8 +11,12 @@ GENERATED_CODES_HISTORY_FILE = 'history/generated_codes.csv'
 
 # This file allows users to generate QR codes to affix onto their notes.
 # The QR codes encode a string with the following format:
-# "#{ Class }-#{ type }-#{ page_number }".
+# "#{ class }-#{ type }-#{ page_number }".
 # The code will then be used to identify the page when it is scanned.
+#
+# The type is usually one or two letters, representing the source of the notes. For
+# example, if the notes came from a lecture, I put 'L' as the type, and if they
+# came from a lab, I put 'La'.
 #
 # In order to keep track of page numbering, past generated codes are
 # located in history/generated_codes.csv.
